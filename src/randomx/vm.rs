@@ -6,6 +6,7 @@ use super::hash::{fill_aes_1rx4_u64, gen_program_aes_4rx4, hash_aes_1rx4};
 use super::m128::{m128d, m128i};
 use super::memory::{VmMemory, CACHE_LINE_SIZE};
 use super::program::{Instr, Mode, Program, Store, MAX_FLOAT_REG, MAX_REG};
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::{_mm_getcsr, _mm_setcsr};
 use std::convert::TryInto;
 use std::sync::Arc;
@@ -274,7 +275,11 @@ impl Vm {
     }
 
     pub fn get_rounding_mode(&self) -> u32 {
-        unsafe { (_mm_getcsr() >> 13) & 3 }
+        unsafe {
+            #[cfg(target_arch = "x86_64")] { (_mm_getcsr() >> 13) & 3 }
+            // TODO get fpcr via https://developer.arm.com/documentation/ddi0595/2021-06/AArch64-Registers/FPCR--Floating-point-Control-Register
+            #[cfg(target_arch = "aarch64")] { 0 }
+        }
     }
 
     //f...

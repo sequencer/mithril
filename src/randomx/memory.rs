@@ -3,11 +3,17 @@ extern crate argon2;
 
 use std::sync::{Arc, RwLock};
 use std::time::Instant;
+#[cfg(target_arch = "x86_64")]
 use std::arch::x86_64::{
     _mm_prefetch,
     _MM_HINT_NTA
 };
-
+#[cfg(target_arch = "aarch64")]
+use std::arch::aarch64::{
+    _prefetch,
+    _PREFETCH_READ,
+    _PREFETCH_LOCALITY0
+};
 use self::argon2::block::Block;
 
 use super::super::byte_string;
@@ -194,7 +200,9 @@ impl VmMemory {
             if let Some(rl) = rl_cached {
                 unsafe{
                     let raw : *const i8 = std::mem::transmute(rl);
-                    _mm_prefetch(raw, _MM_HINT_NTA);
+                    #[cfg(target_arch = "x86_64")] {_mm_prefetch(raw, _MM_HINT_NTA);}
+                    // TODO: Add _PREFETCH_READ, _PREFETCH_LOCALITY0
+                    #[cfg(target_arch = "aarch64")] {_prefetch(raw);}
                 }
             }
         }
