@@ -3,6 +3,7 @@
 #![feature(repr_simd)]
 #![feature(integer_atomics)]
 #![feature(stdsimd)]
+#![feature(asm)]
 
 #[macro_use]
 extern crate serde_derive;

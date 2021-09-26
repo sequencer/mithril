@@ -265,13 +265,23 @@ impl Vm {
     }
 
     pub fn reset_rounding_mode(&mut self) {
-        unsafe {
-            _mm_setcsr(MXCSR_DEFAULT);
-        }
+        #[cfg(all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        target_feature = "sse2"
+        ))]
+            unsafe { _mm_setcsr(MXCSR_DEFAULT); }
+        #[cfg(target_arch = "aarch64")]
+            unsafe {}
     }
 
     pub fn set_rounding_mode(&mut self, mode: u32) {
-        unsafe { _mm_setcsr(MXCSR_DEFAULT | (mode << 13)) }
+        #[cfg(all(
+        any(target_arch = "x86", target_arch = "x86_64"),
+        target_feature = "sse2"
+        ))]
+            unsafe { _mm_setcsr(MXCSR_DEFAULT | (mode << 13)) }
+        #[cfg(target_arch = "aarch64")]
+            unsafe {}
     }
 
     pub fn get_rounding_mode(&self) -> u32 {
@@ -554,8 +564,8 @@ impl Vm {
             Store::L3(_) => imm & SCRATCHPAD_L3_MASK,
             _ => panic!("illegal read from scratchpad"),
         }
-        .try_into()
-        .unwrap();
+            .try_into()
+            .unwrap();
         addr / 8
     }
 
@@ -567,8 +577,8 @@ impl Vm {
             Store::L3(d) => (self.read_r(d).wrapping_add(imm)) & SCRATCHPAD_L3_MASK,
             _ => panic!("illegal read from scratchpad"),
         }
-        .try_into()
-        .unwrap();
+            .try_into()
+            .unwrap();
         addr / 8
     }
 
