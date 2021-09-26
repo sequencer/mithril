@@ -280,15 +280,39 @@ impl Vm {
         target_feature = "sse2"
         ))]
             unsafe { _mm_setcsr(MXCSR_DEFAULT | (mode << 13)) }
-        #[cfg(target_arch = "aarch64")]
-            unsafe {}
+        #[cfg(target_arch = "aarch64")] unsafe {
+            asm!(
+            "msr fpcr, {}", in(reg) (match mode {
+                1 => 2,
+                2 => 1,
+                i => i
+            } << 22),
+            );
+        }
     }
 
     pub fn get_rounding_mode(&self) -> u32 {
         unsafe {
             #[cfg(target_arch = "x86_64")] { (_mm_getcsr() >> 13) & 3 }
             // TODO get fpcr via https://developer.arm.com/documentation/ddi0595/2021-06/AArch64-Registers/FPCR--Floating-point-Control-Register
-            #[cfg(target_arch = "aarch64")] { 0 }
+            #[cfg(target_arch = "aarch64")] unsafe {
+                // RMode, bits [23:22]
+                // 0b00 Round to Nearest (RN) mode.
+                // 0b01	Round towards Plus Infinity (RP) mode.
+                // 0b10	Round towards Minus Infinity (RM) mode.
+                // 0b11	Round towards Zero (RZ) mode.
+                // const ROUND_TO_NEAREST : u32 = 0;
+                // const ROUND_DOWN : u32 = 1;
+                // const ROUND_UP : u32 = 2;
+                // const ROUND_TO_ZERO : u32 = 3;
+                let r: u32;
+                asm!("mrs {}, fpcr", out(reg) r, );
+                match r >> 22 & 3 {
+                    1 => 2,
+                    2 => 1,
+                    i => i
+                }
+            }
         }
     }
 
